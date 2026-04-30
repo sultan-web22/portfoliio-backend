@@ -2,33 +2,27 @@ const express=require('express');
 const mongoose=require('mongoose');
 const { timeStamp } = require('node:console');
 const router = express.Router();
-//slug is for seo reasons 
-const projectschema =new mongoose.Schema({
+const fs = require('fs');
+const path = require('path');
+ 
+const projectSchema =new mongoose.Schema({
 title:{type:String,required:true},
 myrole:{type:String ,required:true }
-,framework:String,
-description:{type:String,required:true} ,
-slug: { type: String} ,projectlink:String
+,framework:String,imgURL:String,
+description:{type:String,required:true}  ,projectlink:String
 },{timestamps:true}) 
-//for handiling slug and its changes
-projectSchema.pre('save', async function(next) {
-    if (this.isModified('title')) {
-    this.slug = slugify(this.title, { lower: true, strict: true });} 
-next(); })
 
-const Project=mongoose.model('project',projectschema);
+const Project=mongoose.model('project',projectSchema);
 // showing my projects
 router.get('/',async (req,res)=>{
-    const myprojects= await project.find({});
+    const myprojects= await Project.find();
     res.status(200).json(myprojects)
-})
+})  
 // adding project with details --- untested yettttttttttttt
 const holdimg= require('./utilities/upload')
 router.post('/',holdimg.single('img'),async (req,res)=>{
  try {
-const { title, myrole, framework, description } = req.body;
-  const { title, myrole, framework, description } = req.body;
-  const imgUrl = req.file ? req.file.filename : null;
+  const imgUrl=req.file.filename;
   const savedProject = await Project.create({
       title, myrole, framework, description, imgURL
     });
@@ -40,26 +34,7 @@ const { title, myrole, framework, description } = req.body;
 
     }
 })
-//update projects 
-router.put('/:title',(req,res)=>{ 
-    try{
-    const {title,myrole,framework,description}  = req.body;
-    const requiredTitle =await Project.findOneAndUpdate({title:req.params},{title :title,myrole :myrole,framework:framework,description:description});
-    res.status(200).json(requiredTitle); 
-} catch(error){
-     res.status(400).json({ error: error.message });
-}
 
-})
-router.delete('/:title',(req,res)=>{
-try{
-const deleted =await Project.findOneAndDelete({title:req.params},{title :title,myrole :myrole,framework:framework,description:description})
-res.status(204).json(deleted)
-}
-catch(erorr){
-     res.status(400).json({ error: error.message });
-}
-})
 const projectsToInsert = [
     {
         title: "Portfolio Website",
