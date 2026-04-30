@@ -1,0 +1,15 @@
+{
+  "hero": {
+    "title": "Hi, my name is Ahmedsultan",
+    "subtitle": "Software Engineer-fullstack Developer",
+    "cta": "View Projects"
+  },
+  "about": {
+    "heading": "About Me",
+    "body": "Building scalable backend solutions..."
+  },
+  "socials": {
+    "github": "https://github.com/yourusername",
+    "linkedin": "https://linkedin.com/in/yourusername"
+  }
+}

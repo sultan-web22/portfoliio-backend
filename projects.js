@@ -2,31 +2,27 @@ const express=require('express');
 const mongoose=require('mongoose');
 const { timeStamp } = require('node:console');
 const router = express.Router();
-//slug is for seo reasons 
-const projectschema =new mongoose.Schema({
+const fs = require('fs');
+const path = require('path');
+ 
+const projectSchema =new mongoose.Schema({
 title:{type:String,required:true},
 myrole:{type:String ,required:true }
-,framework:String,
-description:{type:String,required:true} ,
-slug: { type: String} ,projectlink:String
+,framework:String,imgURL:String,
+description:{type:String,required:true}  ,projectlink:String
 },{timestamps:true}) 
-//for handiling slug and its changes
-projectSchema.pre('save', async function(next) {
-    if (this.isModified('title')) {
-    this.slug = slugify(this.title, { lower: true, strict: true });} 
-next(); })
 
-const Project=mongoose.model('project',projectschema);
+const Project=mongoose.model('project',projectSchema);
 // showing my projects
 router.get('/',async (req,res)=>{
-    const myprojects= await project.find({});
+    const myprojects= await Project.find();
     res.status(200).json(myprojects)
 })  
-// adding project with details --- untested yettttttttttttt
-const holdimg= require('./utilities/upload')
+const holdimg= require('./utilities/upload.project')
 router.post('/',holdimg.single('img'),async (req,res)=>{
  try {
-  const imgUrl=req.file.filename;
+  const imgUrl=req.file.filename ?req.file.filename:null;
+  const {title,myrole,framework,description}=req.body;
   const savedProject = await Project.create({
       title, myrole, framework, description, imgURL
     });
@@ -38,43 +34,64 @@ router.post('/',holdimg.single('img'),async (req,res)=>{
 
     }
 })
-
-const projectsToInsert = [
-    {
-        title: "Portfolio Website",
-        myrole: "Frontend Developer",
-        framework: "React",
-        description: "A personal portfolio to showcase my coding journey."
-    },
-    {
-        title: "Task Manager API",
-        myrole: "Backend Developer",
-        framework: "Node.js & Express",
-        description: "A RESTful API for managing daily tasks with user authentication."
-    },
-    {
-        title: "E-commerce Dashboard",
-        myrole: "Fullstack Developer",
-        framework: "Next.js",
-        description: "A real-time dashboard for tracking sales and inventory."
-    },
-    {
-        title: "Weather App",
-        myrole: "Lead Developer",
-        framework: "Vue.js",
-        description: "An app that fetches live weather data using the OpenWeather API."
-    }
-];
- 
-// should be deleted only for testing
-const seedDatabase = async () => {
+router.put('/:oldTitle', holdimg.single('img'), async (req, res) => {
     try {
-        await project.insertMany(projectsToInsert);
-        
-    } catch (err) {
-        console.error("Error seeding data:", err);
-    }
-}; seedDatabase();
+        const { oldTitle } = req.params;
+        const { title, myrole, framework, description } = req.body;
 
+        const project = await Project.findOne({ title: oldTitle });
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        const updateData = { title, myrole, framework, description };
+
+        
+        if (req.file) {
+            updateData.imgURL = req.file.filename; 
+         if (project.imgURL) {
+       const oldImagePath = path.join(process.cwd(), 'projects.uploads', project.imgURL);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlink(oldImagePath, (err) => {
+                        if (err) console.error("FileSystem Error:", err);
+                    });
+                }
+            }
+        }
+        const result = await Project.findOneAndUpdate(
+            { title: oldTitle }, 
+            { $set: updateData },
+            {new:true}
+        );
+
+        res.status(200).json({ message: "Project updated successfully", result });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+router.delete('/:title', async (req, res) => {
+    try {
+        const { title } = req.params;
+        const project = await Project.findOne({ title: title });
+
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        if (project.imgURL) { 
+            const imagePath = path.join(process.cwd(), 'uploads', project.imgURL);
+            
+            if (fs.existsSync(imagePath)) {
+                fs.unlink(imagePath, (err) => {
+                    if (err) console.error("File deletion error:", err);
+                });
+            }}
+        await Project.deleteOne({ title: title });
+
+        res.status(200).json({ message: "Deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 module.exports =router;
