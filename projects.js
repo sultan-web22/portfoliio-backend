@@ -21,12 +21,14 @@ const Project=mongoose.model('project',projectschema);
 router.get('/',async (req,res)=>{
     const myprojects= await project.find({});
     res.status(200).json(myprojects)
-})  
+})
 // adding project with details --- untested yettttttttttttt
 const holdimg= require('./utilities/upload')
 router.post('/',holdimg.single('img'),async (req,res)=>{
  try {
-  const imgUrl=req.file.filename;
+const { title, myrole, framework, description } = req.body;
+  const { title, myrole, framework, description } = req.body;
+  const imgUrl = req.file ? req.file.filename : null;
   const savedProject = await Project.create({
       title, myrole, framework, description, imgURL
     });
@@ -38,7 +40,26 @@ router.post('/',holdimg.single('img'),async (req,res)=>{
 
     }
 })
+//update projects 
+router.put('/:title',(req,res)=>{ 
+    try{
+    const {title,myrole,framework,description}  = req.body;
+    const requiredTitle =await Project.findOneAndUpdate({title:req.params},{title :title,myrole :myrole,framework:framework,description:description});
+    res.status(200).json(requiredTitle); 
+} catch(error){
+     res.status(400).json({ error: error.message });
+}
 
+})
+router.delete('/:title',(req,res)=>{
+try{
+const deleted =await Project.findOneAndDelete({title:req.params},{title :title,myrole :myrole,framework:framework,description:description})
+res.status(204).json(deleted)
+}
+catch(erorr){
+     res.status(400).json({ error: error.message });
+}
+})
 const projectsToInsert = [
     {
         title: "Portfolio Website",
